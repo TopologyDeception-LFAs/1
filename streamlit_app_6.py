@@ -22,61 +22,10 @@ if "employees" not in st.session_state:
     st.session_state.employees: List[Dict] = []
 
 if "services" not in st.session_state:
-    # Preloaded services based on the price list image (each duration/price is a standalone option)
     st.session_state.services: List[Dict] = [
-        # --- Deep Tissue Oil, Relaxation, Dry Massage ---
-        {"name": "NS (20 mins)", "minutes": 20, "price": 40.0},
-        {"name": "NS (30 mins)", "minutes": 30, "price": 50.0},
-        {"name": "NSH (30 mins)", "minutes": 30, "price": 50.0},
-        {"name": "NSH (45 mins)", "minutes": 45, "price": 75.0},
-        {"name": "BH (30 mins)", "minutes": 30, "price": 50.0},
-        {"name": "BH (45 mins)", "minutes": 45, "price": 75.0},
-        {"name": "L (30 mins)", "minutes": 30, "price": 50.0},
-        {"name": "L (45 mins)", "minutes": 45, "price": 75.0},
-        {"name": "NSB (45 mins)", "minutes": 45, "price": 75.0},
-        {"name": "NSB (60 mins)", "minutes": 60, "price": 100.0},
-        {"name": "NSAH (45 mins)", "minutes": 45, "price": 75.0},
-        {"name": "NSAH (60 mins)", "minutes": 60, "price": 100.0},
-        {"name": "NSBH (50 mins)", "minutes": 50, "price": 85.0},
-        {"name": "NSBH (60 mins)", "minutes": 60, "price": 100.0},
-        {"name": "BL (50 mins)", "minutes": 50, "price": 85.0},
-        {"name": "BL (60 mins)", "minutes": 60, "price": 100.0},
-        {"name": "NSBAH (50 mins)", "minutes": 50, "price": 85.0},
-        {"name": "NNSBAH (70 mins)", "minutes": 70, "price": 120.0},
-        {"name": "NSBL (50 mins)", "minutes": 50, "price": 85.0},
-        {"name": "NSBL (70 mins)", "minutes": 70, "price": 120.0},
-        {"name": "WB (60 mins)", "minutes": 60, "price": 100.0},
-        {"name": "WB (90 mins)", "minutes": 90, "price": 150.0},
-
-        # --- Foot Massage & Packages ---
-        {"name": "F(R) (30 mins)", "minutes": 30, "price": 50.0},
-        {"name": "F(R) (60 mins)", "minutes": 60, "price": 100.0},
-        {"name": "NSF (50 mins)", "minutes": 50, "price": 85.0},
-        {"name": "NSBF (60 mins)", "minutes": 60, "price": 100.0},
-        {"name": "NSBLF (70 mins)", "minutes": 70, "price": 120.0},
-        {"name": "WBF (90 mins)", "minutes": 90, "price": 150.0},
-
-        # --- Special Treatment ---
-        {"name": "Pregnancy massage (45 mins)", "minutes": 45, "price": 75.0},
-        {"name": "Pregnancy massage (60 mins)", "minutes": 60, "price": 100.0},
-        {"name": "Children massage (20 mins)", "minutes": 20, "price": 40.0},
-        {"name": "Children massage (30 mins)", "minutes": 30, "price": 50.0},
-        {"name": "Sciatica/Frozen Shoulder/Tennis Elbow/Golf Elbow (30 mins)", "minutes": 30, "price": 50.0},
-        {"name": "Sciatica/Frozen Shoulder/Tennis Elbow/Golf Elbow (45 mins)", "minutes": 45, "price": 75.0},
-        {"name": "Cupping Therapy with herbal oil (30 mins)", "minutes": 30, "price": 50.0},
-        {"name": "Ear Candling & Face Massage (30 mins)", "minutes": 30, "price": 50.0},
-        {"name": "Neck, Shoulders & Back + Cupping (50 mins)", "minutes": 50, "price": 85.0},
-
-        # --- Dry Needling Therapy ---
-        {"name": "Dry Needling (First Session)", "minutes": 0, "price": 80.0},
-        {"name": "Dry Needling (Second+ Session)", "minutes": 0, "price": 70.0},
-        {"name": "Dry Needling + 40 mins Remedial massage", "minutes": 40, "price": 130.0},
-
-        # --- Remedial Massage (Health Fund Rebate) ---
-        {"name": "Remedial Massage (30 mins)", "minutes": 30, "price": 60.0},
-        {"name": "Remedial Massage (45 mins)", "minutes": 45, "price": 85.0},
-        {"name": "Remedial Massage (60 mins)", "minutes": 60, "price": 110.0},
-        {"name": "Remedial Massage (90 mins)", "minutes": 90, "price": 160.0},
+        {"name": "Neck & Shoulders (20 mins)", "minutes": 20, "price": 40.0},
+        {"name": "Neck & Shoulders (30 mins)", "minutes": 30, "price": 50.0},
+        {"name": "Back & Hips (30 mins)", "minutes": 30, "price": 50.0},
     ]
 
 if "assignments" not in st.session_state:
@@ -168,8 +117,8 @@ def refresh_status():
             rec["status"] = "排队中"
 
 with st.sidebar:
-    st.header("Coral Chinese Message")
-    #st.caption("• 默认上班时间：09:00；员工先到先服务。\\n• 轮值顺序：按下一次空闲时间→签到时间→累计接待。")
+    st.header("参数与设置")
+    st.caption("• 默认上班时间：09:00；员工先到先服务。\\n• 轮值顺序：按下一次空闲时间→签到时间→累计接待。")
     st.divider()
 
     st.subheader("服务项目（可编辑）")
@@ -199,7 +148,7 @@ with st.sidebar:
         st.session_state._customer_seq = 1
         st.toast("已清空：员工、等待队列与当日记录均已重置。")
 
-st.title("Coral Chinese Message")
+st.title("🧘 门店排班与轮值提醒系统（Streamlit 版）")
 tab_emp, tab_cus, tab_board = st.tabs(["员工签到/状态", "登记顾客/自动分配", "看板与提醒"])
 
 with tab_emp:
@@ -208,32 +157,58 @@ with tab_emp:
     with cols[0]:
         emp_name = st.text_input("员工姓名", placeholder="例如：小张 / Lily")
     with cols[1]:
-        check_in_time = st.time_input("签到时间", value=datetime.now().replace(hour=9, minute=0, second=0, microsecond=0).time(), step=60)
+        in_mode = st.radio("签到时间", ["使用当前时间（墨尔本）", "手动输入"], horizontal=True, index=0)
+        if in_mode == "使用当前时间（墨尔本）":
+            ci_time = now().time()
+            st.caption(f"当前时间（AEST/AEDT）：{ci_time.strftime('%H:%M:%S')}")
+            manual_ci_str = None
+        else:
+            manual_ci_str = st.text_input("手动输入签到时间（HH:MM 或 HH:MM:SS）", value=now().strftime("%H:%M"))
+            ci_time = None
     with cols[2]:
         if st.button("签到/上班", type="primary"):
             if emp_name:
-                t = datetime.combine(datetime.today().date(), check_in_time)
-                st.session_state.employees.append({
-                    "name": emp_name.strip(),
-                    "check_in": t,
-                    "next_free": t,
-                    "served_count": 0,
-                })
-                st.session_state.employees = sorted(st.session_state.employees, key=lambda e: e["check_in"])
-                st.success(f"{emp_name} 已签到。")
-                try_flush_waiting()
+                if in_mode == "使用当前时间（墨尔本）":
+                    t = datetime.combine(now().date(), ci_time, tzinfo=TZ)
+                else:
+                    try:
+                        parts = manual_ci_str.strip().split(":")
+                        if len(parts) == 2:
+                            hh, mm = int(parts[0]), int(parts[1]); ss = 0
+                        elif len(parts) == 3:
+                            hh, mm, ss = int(parts[0]), int(parts[1]), int(parts[2])
+                        else:
+                            raise ValueError("时间格式不正确")
+                        from datetime import time as dtime
+                        t = datetime.combine(now().date(), dtime(hour=hh, minute=mm, second=ss), tzinfo=TZ)
+                    except Exception as e:
+                        st.error(f"时间格式错误，请按 HH:MM 或 HH:MM:SS 输入。例如 09:00 或 09:00:00。错误：{e}")
+                        t = None
+                if t is not None:
+                    name = emp_name.strip()
+                    existing = next((e for e in st.session_state.employees if e["name"] == name), None)
+                    if existing:
+                        existing["check_in"] = t
+                        if existing["next_free"] < t:
+                            existing["next_free"] = t
+                        st.success(f"{name} 签到时间已更新为 {t.strftime('%H:%M')}（墨尔本）")
+                    else:
+                        st.session_state.employees.append({
+                            "name": name,
+                            "check_in": t,
+                            "next_free": t,
+                            "served_count": 0,
+                        })
+                        st.success(f"{name} 已签到。")
+                    st.session_state.employees = sorted(st.session_state.employees, key=lambda e: e["check_in"])
+                    try_flush_waiting()
             else:
                 st.error("请输入员工姓名。")
 
     if st.session_state.employees:
         st.markdown("#### 员工列表")
         df_emp = pd.DataFrame([
-            {
-                "员工": e["name"],
-                "签到": fmt_t(e["check_in"]),
-                "下一次空闲": fmt_t(e["next_free"]),
-                "累计接待": e["served_count"],
-            }
+            {"员工": e["name"], "签到": fmt_t(e["check_in"]), "下一次空闲": fmt_t(e["next_free"]), "累计接待": e["served_count"]}
             for e in sorted_employees_for_rotation()
         ])
         st.dataframe(df_emp, use_container_width=True)
@@ -249,14 +224,11 @@ with tab_cus:
     with cols[1]:
         time_mode = st.radio("到店时间", ["使用当前时间", "手动输入"], horizontal=True, index=0)
         if time_mode == "使用当前时间":
-            #arrival_time = datetime.now().time()
-            #st.caption(f"当前时间：{arrival_time.strftime('%H:%M:%S')}")
-            arrival_time = now().time()
-            st.caption(f"当前时间（墨尔本）：{arrival_time.strftime('%H:%M:%S')}")
+            arrival_time = datetime.now().time()
+            st.caption(f"当前时间：{arrival_time.strftime('%H:%M:%S')}")
             manual_time_str = None
         else:
             manual_time_str = st.text_input("手动输入到店时间（HH:MM 或 HH:MM:SS）", value=now().strftime("%H:%M"))
-            #manual_time_str = st.time_input("签到时间", value=datetime.now().replace(hour=9, minute=0, second=0, microsecond=0).time(), step=60)
             arrival_time = None
     with cols[2]:
         group_count = st.number_input("同时到店人数（相同项目）", min_value=1, max_value=20, value=1, step=1)
