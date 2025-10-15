@@ -18,8 +18,6 @@ def fmt(dt: Optional[datetime]) -> str:
 def fmt_t(dt: Optional[datetime]) -> str:
     return dt.strftime("%H:%M") if dt else ""
 
-def now() -> datetime:
-    return datetime.now()
 
 # ---------- Session state init ----------
 if "employees" not in st.session_state:
