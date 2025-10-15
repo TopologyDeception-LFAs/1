@@ -199,7 +199,7 @@ with st.sidebar:
         st.session_state._customer_seq = 1
         st.toast("已清空：员工、等待队列与当日记录均已重置。")
 
-st.title("Coral Chinese Message门店排班与轮值提醒系统")
+st.title("Coral Chinese Message")
 tab_emp, tab_cus, tab_board = st.tabs(["员工签到/状态", "登记顾客/自动分配", "看板与提醒"])
 
 with tab_emp:
@@ -255,7 +255,8 @@ with tab_cus:
             st.caption(f"当前时间（墨尔本）：{arrival_time.strftime('%H:%M:%S')}")
             manual_time_str = None
         else:
-            manual_time_str = st.text_input("手动输入到店时间（HH:MM 或 HH:MM:SS）", value=now().strftime("%H:%M"))
+            #manual_time_str = st.text_input("手动输入到店时间（HH:MM 或 HH:MM:SS）", value=now().strftime("%H:%M"))
+            manual_time_str = st.time_input("签到时间", value=datetime.now().replace(hour=9, minute=0, second=0, microsecond=0).time(), step=60)
             arrival_time = None
     with cols[2]:
         group_count = st.number_input("同时到店人数（相同项目）", min_value=1, max_value=20, value=1, step=1)
