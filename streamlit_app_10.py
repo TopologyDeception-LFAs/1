@@ -125,6 +125,7 @@ if "loaded_today" not in st.session_state:
     # Preloaded services based on the price list image (each duration/price is a standalone option)
         st.session_state.services: List[Dict] = [
         # --- Deep Tissue Oil, Relaxation, Dry Massage ---
+        {"name": "NS (1 mins)", "minutes": 1, "price": 40.0},
         {"name": "NS (20 mins)", "minutes": 20, "price": 40.0},
         {"name": "NS (30 mins)", "minutes": 30, "price": 50.0},
         {"name": "NSH (30 mins)", "minutes": 30, "price": 50.0},
