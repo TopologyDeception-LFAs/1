@@ -244,7 +244,7 @@ with tab_emp:
     with cols[0]:
         emp_name = st.text_input("员工姓名", placeholder="例如：小张 / Lily")
     with cols[1]:
-        check_in_time = st.time_input("签到时间", value=datetime.now().replace(hour=9, minute=0, second=0, microsecond=0).time(), step=300)
+        check_in_time = st.time_input("签到时间", value=datetime.now().replace(hour=9, minute=0, second=0, microsecond=0).time(), step=60)
     with cols[2]:
         if st.button("签到/上班", type="primary"):
             if emp_name:
