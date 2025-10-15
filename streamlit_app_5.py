@@ -337,7 +337,7 @@ with tab_cus:
                 arrival_dt = datetime.combine(datetime.today().date(), t)
                 register_customers(service_chosen, arrival_dt, count=int(group_count))
                 st.success("已登记与分配（不足时将加入等待队）。")
-        """
+    """
 
     st.divider()
     st.markdown("#### 等待队列")
