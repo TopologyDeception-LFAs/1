@@ -275,8 +275,10 @@ with tab_cus:
     with cols[1]:
         time_mode = st.radio("到店时间", ["使用当前时间", "手动输入"], horizontal=True, index=0)
         if time_mode == "使用当前时间":
-            arrival_time = datetime.now().time()
-            st.caption(f"当前时间：{arrival_time.strftime('%H:%M:%S')}")
+            #arrival_time = datetime.now().time()
+            #st.caption(f"当前时间：{arrival_time.strftime('%H:%M:%S')}")
+            arrival_time = now().time()
+            st.caption(f"当前时间（墨尔本）：{arrival_time.strftime('%H:%M:%S')}")
             manual_time_str = None
         else:
             manual_time_str = st.text_input("手动输入到店时间（HH:MM 或 HH:MM:SS）", value=now().strftime("%H:%M"))
