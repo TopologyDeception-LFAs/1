@@ -29,36 +29,36 @@ if "services" not in st.session_state:
     # Preloaded services based on the price list image (each duration/price is a standalone option)
     st.session_state.services: List[Dict] = [
         # --- Deep Tissue Oil, Relaxation, Dry Massage ---
-        {"name": "Neck & Shoulders (20 mins)", "minutes": 20, "price": 40.0},
-        {"name": "Neck & Shoulders (30 mins)", "minutes": 30, "price": 50.0},
-        {"name": "Neck, Shoulders & Head (30 mins)", "minutes": 30, "price": 50.0},
-        {"name": "Neck, Shoulders & Head (45 mins)", "minutes": 45, "price": 75.0},
-        {"name": "Back & Hips (30 mins)", "minutes": 30, "price": 50.0},
-        {"name": "Back & Hips (45 mins)", "minutes": 45, "price": 75.0},
-        {"name": "Legs (30 mins)", "minutes": 30, "price": 50.0},
-        {"name": "Legs (45 mins)", "minutes": 45, "price": 75.0},
-        {"name": "Neck, Shoulders & Back (45 mins)", "minutes": 45, "price": 75.0},
-        {"name": "Neck, Shoulders & Back (60 mins)", "minutes": 60, "price": 100.0},
-        {"name": "Neck, Shoulders, Arms & Hands (45 mins)", "minutes": 45, "price": 75.0},
-        {"name": "Neck, Shoulders, Arms & Hands (60 mins)", "minutes": 60, "price": 100.0},
-        {"name": "Neck, Shoulders, Back & Head (50 mins)", "minutes": 50, "price": 85.0},
-        {"name": "Neck, Shoulders, Back & Head (60 mins)", "minutes": 60, "price": 100.0},
-        {"name": "Back & Legs (50 mins)", "minutes": 50, "price": 85.0},
-        {"name": "Back & Legs (60 mins)", "minutes": 60, "price": 100.0},
-        {"name": "Neck, Shoulders, Back, Arms & Hands (50 mins)", "minutes": 50, "price": 85.0},
-        {"name": "Neck, Shoulders, Back, Arms & Hands (70 mins)", "minutes": 70, "price": 120.0},
-        {"name": "Neck, Shoulders, Back & Legs (50 mins)", "minutes": 50, "price": 85.0},
-        {"name": "Neck, Shoulders, Back & Legs (70 mins)", "minutes": 70, "price": 120.0},
-        {"name": "Whole Body (60 mins)", "minutes": 60, "price": 100.0},
-        {"name": "Whole Body (90 mins)", "minutes": 90, "price": 150.0},
+        {"name": "NS (20 mins)", "minutes": 20, "price": 40.0},
+        {"name": "NS (30 mins)", "minutes": 30, "price": 50.0},
+        {"name": "NSH (30 mins)", "minutes": 30, "price": 50.0},
+        {"name": "NSH (45 mins)", "minutes": 45, "price": 75.0},
+        {"name": "BH (30 mins)", "minutes": 30, "price": 50.0},
+        {"name": "BH (45 mins)", "minutes": 45, "price": 75.0},
+        {"name": "L (30 mins)", "minutes": 30, "price": 50.0},
+        {"name": "L (45 mins)", "minutes": 45, "price": 75.0},
+        {"name": "NSB (45 mins)", "minutes": 45, "price": 75.0},
+        {"name": "NSB (60 mins)", "minutes": 60, "price": 100.0},
+        {"name": "NSAH (45 mins)", "minutes": 45, "price": 75.0},
+        {"name": "NSAH (60 mins)", "minutes": 60, "price": 100.0},
+        {"name": "NSBH (50 mins)", "minutes": 50, "price": 85.0},
+        {"name": "NSBH (60 mins)", "minutes": 60, "price": 100.0},
+        {"name": "BL (50 mins)", "minutes": 50, "price": 85.0},
+        {"name": "BL (60 mins)", "minutes": 60, "price": 100.0},
+        {"name": "NSBAH (50 mins)", "minutes": 50, "price": 85.0},
+        {"name": "NNSBAH (70 mins)", "minutes": 70, "price": 120.0},
+        {"name": "NSBL (50 mins)", "minutes": 50, "price": 85.0},
+        {"name": "NSBL (70 mins)", "minutes": 70, "price": 120.0},
+        {"name": "WB (60 mins)", "minutes": 60, "price": 100.0},
+        {"name": "WB (90 mins)", "minutes": 90, "price": 150.0},
 
         # --- Foot Massage & Packages ---
-        {"name": "Feet massage (Reflexology/Relaxation) (30 mins)", "minutes": 30, "price": 50.0},
-        {"name": "Feet massage (Reflexology/Relaxation) (60 mins)", "minutes": 60, "price": 100.0},
-        {"name": "Neck & Shoulders + Feet (50 mins)", "minutes": 50, "price": 85.0},
-        {"name": "Neck, Shoulders & Back + Feet (60 mins)", "minutes": 60, "price": 100.0},
-        {"name": "Neck, Shoulders, Back & Legs + Feet (70 mins)", "minutes": 70, "price": 120.0},
-        {"name": "Whole Body + Feet (90 mins)", "minutes": 90, "price": 150.0},
+        {"name": "F(R) (30 mins)", "minutes": 30, "price": 50.0},
+        {"name": "F(R) (60 mins)", "minutes": 60, "price": 100.0},
+        {"name": "NSF (50 mins)", "minutes": 50, "price": 85.0},
+        {"name": "NSBF (60 mins)", "minutes": 60, "price": 100.0},
+        {"name": "NSBLF (70 mins)", "minutes": 70, "price": 120.0},
+        {"name": "WBF (90 mins)", "minutes": 90, "price": 150.0},
 
         # --- Special Treatment ---
         {"name": "Pregnancy massage (45 mins)", "minutes": 45, "price": 75.0},
@@ -234,7 +234,7 @@ with st.sidebar:
         st.toast("已清空：员工、等待队列与当日记录均已重置。")
 
 # ---------- Main Layout ----------
-st.title("🧘 门店排班与轮值提醒系统（Streamlit 版）")
+st.title("Coral Chinese Message门店排班与轮值提醒系统")
 
 tab_emp, tab_cus, tab_board = st.tabs(["员工签到/状态", "登记顾客/自动分配", "看板与提醒"])
 
