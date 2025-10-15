@@ -289,7 +289,7 @@ with tab_cus:
     with cols[0]:
         service_chosen = st.selectbox("项目", all_service_names, index=0)
     with cols[1]:
-        time_mode = st.radio("到店时间", ["使用当前时间", "手动输入"], horizontal=True, index=0)
+        time_mode = st.radio("开始时间", ["使用当前时间", "手动输入"], horizontal=True, index=0)
         if time_mode == "使用当前时间":
             arrival_time = datetime.now().time()
             st.caption(f"当前时间：{arrival_time.strftime('%H:%M:%S')}")
