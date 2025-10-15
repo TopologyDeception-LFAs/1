@@ -642,7 +642,7 @@ with tab_board:
                 per_emp["收款注释"] = per_emp.apply(note, axis=1)
                 per_emp.rename(columns={"employee":"员工","realized":"营业额($)"}, inplace=True)
                 st.markdown("###### 员工营业额统计（今日，含收款注释）")
-                #st.dataframe(per_emp[["员工","营业额($)","收款注释"]], use_container_width=True, height=260)
+                st.dataframe(per_emp[["员工","营业额($)","收款注释"]], use_container_width=True, height=260)
         else:
             st.caption("今天还没有记录。")
 
