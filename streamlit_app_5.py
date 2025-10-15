@@ -182,7 +182,7 @@ def refresh_status():
 
 # ---------- Sidebar Controls ----------
 with st.sidebar:
-    #st.header("Coral Chinese Message")
+    st.header("Coral Chinese Message")
     #st.caption("• 默认上班时间：09:00；员工先到先服务。\n• 轮值顺序：按下一次空闲时间→签到时间→累计接待。")
     st.divider()
 
