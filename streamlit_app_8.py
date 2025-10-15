@@ -1,0 +1,315 @@
+
+import streamlit as st
+import pandas as pd
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+from typing import List, Dict, Optional
+
+st.set_page_config(page_title="门店排班与轮值管理", layout="wide")
+
+def fmt(dt: Optional[datetime]) -> str:
+    return dt.strftime("%Y-%m-%d %H:%M") if dt else ""
+
+def fmt_t(dt: Optional[datetime]) -> str:
+    return dt.strftime("%H:%M") if dt else ""
+
+TZ = ZoneInfo('Australia/Melbourne')
+
+def now() -> datetime:
+    return datetime.now(TZ)
+
+if "employees" not in st.session_state:
+    st.session_state.employees: List[Dict] = []
+
+if "services" not in st.session_state:
+    st.session_state.services: List[Dict] = [
+        {"name": "Neck & Shoulders (20 mins)", "minutes": 20, "price": 40.0},
+        {"name": "Neck & Shoulders (30 mins)", "minutes": 30, "price": 50.0},
+        {"name": "Back & Hips (30 mins)", "minutes": 30, "price": 50.0},
+    ]
+
+if "assignments" not in st.session_state:
+    st.session_state.assignments: List[Dict] = []
+    st.session_state._customer_seq = 1
+
+if "waiting" not in st.session_state:
+    st.session_state.waiting: List[Dict] = []
+
+def sorted_employees_for_rotation() -> List[Dict]:
+    return sorted(
+        st.session_state.employees,
+        key=lambda e: (e["next_free"], e["check_in"], e["served_count"]),
+    )
+
+def assign_customer(service: Dict, arrival: datetime) -> Optional[Dict]:
+    if not st.session_state.employees:
+        return None
+    emps = sorted_employees_for_rotation()
+    chosen = emps[0]
+    start_time = max(arrival, chosen["next_free"])
+    end_time = start_time + timedelta(minutes=service["minutes"])
+    record = {
+        "customer_id": st.session_state._customer_seq,
+        "service": service["name"],
+        "minutes": service["minutes"],
+        "employee": chosen["name"],
+        "start": start_time,
+        "end": end_time,
+        "price": service["price"],
+        "status": "进行中" if start_time <= now() < end_time else ("已完成" if end_time <= now() else "排队中"),
+    }
+    st.session_state._customer_seq += 1
+    chosen["next_free"] = end_time
+    chosen["served_count"] += 1
+    for i, e in enumerate(st.session_state.employees):
+        if e["name"] == chosen["name"]:
+            st.session_state.employees[i] = chosen
+            break
+    st.session_state.assignments.append(record)
+    return record
+
+def try_flush_waiting():
+    st.session_state.waiting.sort(key=lambda x: x["arrival"])
+    flushed = []
+    still_waiting = []
+    for item in st.session_state.waiting:
+        assigned_any = 0
+        for _ in range(item["count"]):
+            rec = assign_customer(item["service"], item["arrival"])
+            if rec is None:
+                still_waiting.append({
+                    "customer_id": item["customer_id"],
+                    "service": item["service"],
+                    "arrival": item["arrival"],
+                    "count": item["count"] - assigned_any
+                })
+                break
+            assigned_any += 1
+        if assigned_any == item["count"]:
+            flushed.append(item)
+    st.session_state.waiting = still_waiting
+    return flushed
+
+def register_customers(service_name: str, arrival: datetime, count: int = 1):
+    service = next((s for s in st.session_state.services if s["name"] == service_name), None)
+    if service is None:
+        st.error("未找到该项目")
+        return
+    for i in range(count):
+        rec = assign_customer(service, arrival)
+        if rec is None:
+            st.session_state.waiting.append({
+                "customer_id": st.session_state._customer_seq,
+                "service": service,
+                "arrival": arrival,
+                "count": count - i,
+            })
+            st.session_state._customer_seq += 1
+            break
+
+def refresh_status():
+    for rec in st.session_state.assignments:
+        if rec["end"] <= now():
+            rec["status"] = "已完成"
+        elif rec["start"] <= now() < rec["end"]:
+            rec["status"] = "进行中"
+        else:
+            rec["status"] = "排队中"
+
+with st.sidebar:
+    st.header("参数与设置")
+    st.caption("• 默认上班时间：09:00；员工先到先服务。\\n• 轮值顺序：按下一次空闲时间→签到时间→累计接待。")
+    st.divider()
+
+    st.subheader("服务项目（可编辑）")
+    with st.expander("管理项目（时长/价格）", expanded=False):
+        df_services = pd.DataFrame(st.session_state.services)
+        edited = st.data_editor(df_services, num_rows="dynamic", use_container_width=True, key="service_editor")
+        if st.button("保存项目变更"):
+            clean = []
+            for _, row in edited.iterrows():
+                if not row["name"] or pd.isna(row["minutes"]) or pd.isna(row["price"]):
+                    continue
+                clean.append({"name": str(row["name"]), "minutes": int(row["minutes"]), "price": float(row["price"])})
+            st.session_state.services = clean
+            st.success("已保存服务项目。")
+
+    st.subheader("数据导出")
+    if st.session_state.assignments:
+        df_export = pd.DataFrame([
+            {"客户ID": r["customer_id"], "项目": r["service"], "时长(分钟)": r["minutes"], "员工": r["employee"], "开始时间": fmt(r["start"]), "结束时间": fmt(r["end"]), "价格($)": r["price"], "状态": r["status"]}
+            for r in st.session_state.assignments
+        ])
+        st.download_button("下载今日记录 CSV", df_export.to_csv(index=False).encode("utf-8-sig"), file_name=f"records_{now().strftime('%Y%m%d_%H%M')}.csv", mime="text/csv")
+    if st.button("清空今日数据（新一天）", type="primary"):
+        st.session_state.assignments = []
+        st.session_state.waiting = []
+        st.session_state.employees = []
+        st.session_state._customer_seq = 1
+        st.toast("已清空：员工、等待队列与当日记录均已重置。")
+
+st.title("🧘 门店排班与轮值提醒系统（Streamlit 版）")
+tab_emp, tab_cus, tab_board = st.tabs(["员工签到/状态", "登记顾客/自动分配", "看板与提醒"])
+
+with tab_emp:
+    st.subheader("员工签到（先到先服务）")
+    cols = st.columns(3)
+    with cols[0]:
+        emp_name = st.text_input("员工姓名", placeholder="例如：小张 / Lily")
+    with cols[1]:
+        in_mode = st.radio("签到时间", ["使用当前时间（墨尔本）", "手动输入"], horizontal=True, index=0)
+        if in_mode == "使用当前时间（墨尔本）":
+            ci_time = now().time()
+            st.caption(f"当前时间（AEST/AEDT）：{ci_time.strftime('%H:%M:%S')}")
+            manual_ci_str = None
+        else:
+            manual_ci_str = st.text_input("手动输入签到时间（HH:MM 或 HH:MM:SS）", value=now().strftime("%H:%M"))
+            ci_time = None
+    with cols[2]:
+        if st.button("签到/上班", type="primary"):
+            if emp_name:
+                if in_mode == "使用当前时间（墨尔本）":
+                    t = datetime.combine(now().date(), ci_time, tzinfo=TZ)
+                else:
+                    try:
+                        parts = manual_ci_str.strip().split(":")
+                        if len(parts) == 2:
+                            hh, mm = int(parts[0]), int(parts[1]); ss = 0
+                        elif len(parts) == 3:
+                            hh, mm, ss = int(parts[0]), int(parts[1]), int(parts[2])
+                        else:
+                            raise ValueError("时间格式不正确")
+                        from datetime import time as dtime
+                        t = datetime.combine(now().date(), dtime(hour=hh, minute=mm, second=ss), tzinfo=TZ)
+                    except Exception as e:
+                        st.error(f"时间格式错误，请按 HH:MM 或 HH:MM:SS 输入。例如 09:00 或 09:00:00。错误：{e}")
+                        t = None
+                if t is not None:
+                    name = emp_name.strip()
+                    existing = next((e for e in st.session_state.employees if e["name"] == name), None)
+                    if existing:
+                        existing["check_in"] = t
+                        if existing["next_free"] < t:
+                            existing["next_free"] = t
+                        st.success(f"{name} 签到时间已更新为 {t.strftime('%H:%M')}（墨尔本）")
+                    else:
+                        st.session_state.employees.append({
+                            "name": name,
+                            "check_in": t,
+                            "next_free": t,
+                            "served_count": 0,
+                        })
+                        st.success(f"{name} 已签到。")
+                    st.session_state.employees = sorted(st.session_state.employees, key=lambda e: e["check_in"])
+                    try_flush_waiting()
+            else:
+                st.error("请输入员工姓名。")
+
+    if st.session_state.employees:
+        st.markdown("#### 员工列表")
+        df_emp = pd.DataFrame([
+            {"员工": e["name"], "签到": fmt_t(e["check_in"]), "下一次空闲": fmt_t(e["next_free"]), "累计接待": e["served_count"]}
+            for e in sorted_employees_for_rotation()
+        ])
+        st.dataframe(df_emp, use_container_width=True)
+    else:
+        st.info("暂无员工签到。")
+
+with tab_cus:
+    st.subheader("登记顾客（按轮值自动分配）")
+    cols = st.columns(4)
+    all_service_names = [s["name"] for s in st.session_state.services]
+    with cols[0]:
+        service_chosen = st.selectbox("项目", all_service_names, index=0)
+    with cols[1]:
+        time_mode = st.radio("到店时间", ["使用当前时间", "手动输入"], horizontal=True, index=0)
+        if time_mode == "使用当前时间":
+            arrival_time = datetime.now().time()
+            st.caption(f"当前时间：{arrival_time.strftime('%H:%M:%S')}")
+            manual_time_str = None
+        else:
+            manual_time_str = st.text_input("手动输入到店时间（HH:MM 或 HH:MM:SS）", value=now().strftime("%H:%M"))
+            arrival_time = None
+    with cols[2]:
+        group_count = st.number_input("同时到店人数（相同项目）", min_value=1, max_value=20, value=1, step=1)
+    with cols[3]:
+        if st.button("登记并分配", type="primary"):
+            if time_mode == "使用当前时间":
+                t = arrival_time
+            else:
+                try:
+                    parts = manual_time_str.strip().split(":")
+                    if len(parts) == 2:
+                        hh, mm = int(parts[0]), int(parts[1]); ss = 0
+                    elif len(parts) == 3:
+                        hh, mm, ss = int(parts[0]), int(parts[1]), int(parts[2])
+                    else:
+                        raise ValueError("时间格式不正确")
+                    from datetime import time as dtime
+                    t = dtime(hour=hh, minute=mm, second=ss)
+                except Exception as e:
+                    st.error(f"时间格式错误，请按 HH:MM 或 HH:MM:SS 输入。例如 11:32 或 11:32:00。错误：{e}")
+                    t = None
+            if t is not None:
+                arrival_dt = datetime.combine(now().date(), t, tzinfo=TZ)
+                register_customers(service_chosen, arrival_dt, count=int(group_count))
+                st.success("已登记与分配（不足时将加入等待队）。")
+
+with tab_board:
+    st.subheader("实时看板")
+    refresh_status()
+    left, right = st.columns(2)
+    with left:
+        st.markdown("##### 进行中")
+        active = [r for r in st.session_state.assignments if r["status"] == "进行中"]
+        if active:
+            df_act = pd.DataFrame([{"客户ID": r["customer_id"], "员工": r["employee"], "项目": r["service"], "开始": fmt_t(r["start"]), "结束": fmt_t(r["end"]), "剩余(分)": max(0, int((r["end"] - now()).total_seconds() // 60))} for r in sorted(active, key=lambda x: x["end"])])
+            st.dataframe(df_act, use_container_width=True, height=280)
+        else:
+            st.caption("暂无进行中的服务。")
+        st.markdown("##### 排队中（已分配，未开始）")
+        queued = [r for r in st.session_state.assignments if r["status"] == "排队中"]
+        if queued:
+            df_q = pd.DataFrame([{"客户ID": r["customer_id"], "员工": r["employee"], "项目": r["service"], "开始": fmt_t(r["start"]), "结束": fmt_t(r["end"])} for r in sorted(queued, key=lambda x: x["start"])])
+            st.dataframe(df_q, use_container_width=True, height=220)
+        else:
+            st.caption("暂无排队中的记录。")
+        st.markdown("##### 等待分配（未指派员工）")
+        if st.session_state.waiting:
+            df_w = pd.DataFrame([{"批次客户ID": w["customer_id"], "项目": w["service"]["name"], "人数": w["count"], "到店": fmt_t(w["arrival"])} for w in sorted(st.session_state.waiting, key=lambda x: x["arrival"])])
+            st.dataframe(df_w, use_container_width=True, height=220)
+        else:
+            st.caption("暂无等待分配的顾客。")
+        st.markdown("##### 员工轮值队列（下一位 →）")
+        if st.session_state.employees:
+            rotation = sorted_employees_for_rotation()
+            rows = []
+            for idx, e in enumerate(rotation):
+                status = "空闲" if e["next_free"] <= now() else f"忙碌至 {fmt_t(e['next_free'])}"
+                rows.append({"顺位": "👉 下一位" if idx == 0 else idx + 1, "员工": e["name"], "状态": status, "下一次空闲": fmt_t(e["next_free"]), "累计接待": e["served_count"]})
+            df_rot = pd.DataFrame(rows)
+            st.dataframe(df_rot, use_container_width=True, height=260)
+            nxt = rotation[0]
+            mins = max(0, int((nxt["next_free"] - now()).total_seconds() // 60))
+            if mins == 0:
+                st.success(f"下一位应接单员工：{nxt['name']}（可立即接待）")
+            else:
+                st.info(f"下一位应接单员工：{nxt['name']}（预计 {mins} 分钟后空闲，{fmt_t(nxt['next_free'])}）")
+        else:
+            st.caption("暂无员工签到。")
+    with right:
+        st.markdown("##### 今日全部记录")
+        if st.session_state.assignments:
+            df_all = pd.DataFrame([{"客户ID": r["customer_id"], "员工": r["employee"], "项目": r["service"], "开始": fmt_t(r["start"]), "结束": fmt_t(r["end"]), "价格($)": r["price"], "状态": r["status"]} for r in sorted(st.session_state.assignments, key=lambda x: (x["start"], x["customer_id"]))])
+            st.dataframe(df_all, use_container_width=True, height=360)
+            total_revenue = sum(r["price"] for r in st.session_state.assignments if r["status"] != "排队中")
+            st.metric("今日营收(已开始/已完成)", f"${total_revenue:,.2f}")
+            df_rev = pd.DataFrame([r for r in st.session_state.assignments if r["status"] != "排队中"])
+            if not df_rev.empty:
+                per_emp = df_rev.groupby("employee")["price"].sum().reset_index()
+                per_emp.columns = ["员工", "营业额($)"]
+                per_emp = per_emp.sort_values("营业额($)", ascending=False)
+                st.markdown("###### 员工营业额统计（今日）")
+                st.dataframe(per_emp, use_container_width=True, height=240)
+        else:
+            st.caption("今天还没有记录。")
