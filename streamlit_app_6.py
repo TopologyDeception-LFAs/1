@@ -208,6 +208,44 @@ with tab_emp:
     with cols[0]:
         emp_name = st.text_input("员工姓名", placeholder="例如：小张 / Lily")
     with cols[1]:
+        check_in_time = st.time_input("签到时间", value=datetime.now().replace(hour=9, minute=0, second=0, microsecond=0).time(), step=60)
+    with cols[2]:
+        if st.button("签到/上班", type="primary"):
+            if emp_name:
+                t = datetime.combine(datetime.today().date(), check_in_time)
+                st.session_state.employees.append({
+                    "name": emp_name.strip(),
+                    "check_in": t,
+                    "next_free": t,
+                    "served_count": 0,
+                })
+                st.session_state.employees = sorted(st.session_state.employees, key=lambda e: e["check_in"])
+                st.success(f"{emp_name} 已签到。")
+                try_flush_waiting()
+            else:
+                st.error("请输入员工姓名。")
+
+    if st.session_state.employees:
+        st.markdown("#### 员工列表")
+        df_emp = pd.DataFrame([
+            {
+                "员工": e["name"],
+                "签到": fmt_t(e["check_in"]),
+                "下一次空闲": fmt_t(e["next_free"]),
+                "累计接待": e["served_count"],
+            }
+            for e in sorted_employees_for_rotation()
+        ])
+        st.dataframe(df_emp, use_container_width=True)
+    else:
+        st.info("暂无员工签到。")
+"""
+with tab_emp:
+    st.subheader("员工签到（先到先服务）")
+    cols = st.columns(3)
+    with cols[0]:
+        emp_name = st.text_input("员工姓名", placeholder="例如：小张 / Lily")
+    with cols[1]:
         in_mode = st.radio("签到时间", ["使用当前时间（墨尔本）", "手动输入"], horizontal=True, index=0)
         if in_mode == "使用当前时间（墨尔本）":
             ci_time = now().time()
@@ -265,6 +303,7 @@ with tab_emp:
         st.dataframe(df_emp, use_container_width=True)
     else:
         st.info("暂无员工签到。")
+"""
 
 with tab_cus:
     st.subheader("登记顾客（按轮值自动分配）")
