@@ -240,7 +240,7 @@ with st.sidebar:
         st.toast("已清空：员工、等待队列与当日记录均已重置。")
 
 # ---------- Main Layout ----------
-st.title("Coral Chinese Message门店排班与轮值提醒系统")
+st.title("Coral Chinese Message")
 
 tab_emp, tab_cus, tab_board = st.tabs(["员工签到/状态", "登记顾客/自动分配", "看板与提醒"])
 
@@ -288,6 +288,20 @@ with tab_cus:
     all_service_names = [s["name"] for s in st.session_state.services]
     with cols[0]:
         service_chosen = st.selectbox("项目", all_service_names, index=0)
+    # 直接用 time_input（步长 60 秒），默认取墨尔本当前时间
+    with cols[1]:
+        arrival_time = st.time_input("开始时间", value=now().time(), step=60)
+
+    with cols[2]:
+        group_count = st.number_input("同时到店人数（相同项目）", min_value=1, max_value=20, value=1, step=1)
+
+    with cols[3]:
+        if st.button("登记并分配", type="primary"):
+            # 用墨尔本当天日期 + 选择的时刻，合成有时区的 datetime
+            arrival_dt = datetime.combine(now().date(), arrival_time, tzinfo=TZ)
+            register_customers(service_chosen, arrival_dt, count=int(group_count))
+            st.success("已登记与分配（不足时将加入等待队）。")
+    """
     with cols[1]:
         time_mode = st.radio("开始时间", ["使用当前时间", "手动输入"], horizontal=True, index=0)
         if time_mode == "使用当前时间":
@@ -323,6 +337,7 @@ with tab_cus:
                 arrival_dt = datetime.combine(datetime.today().date(), t)
                 register_customers(service_chosen, arrival_dt, count=int(group_count))
                 st.success("已登记与分配（不足时将加入等待队）。")
+        """
 
     st.divider()
     st.markdown("#### 等待队列")
