@@ -123,7 +123,7 @@ if "loaded_today" not in st.session_state:
         st.session_state.employees: List[Dict] = []
     if "services" not in st.session_state:
     # Preloaded services based on the price list image (each duration/price is a standalone option)
-    st.session_state.services: List[Dict] = [
+        st.session_state.services: List[Dict] = [
         # --- Deep Tissue Oil, Relaxation, Dry Massage ---
         {"name": "NS (20 mins)", "minutes": 20, "price": 40.0},
         {"name": "NS (30 mins)", "minutes": 30, "price": 50.0},
@@ -178,6 +178,7 @@ if "loaded_today" not in st.session_state:
         {"name": "Remedial Massage (60 mins)", "minutes": 60, "price": 110.0},
         {"name": "Remedial Massage (90 mins)", "minutes": 90, "price": 160.0},
     ]
+
     
     if "assignments" not in st.session_state:
         st.session_state.assignments: List[Dict] = []
