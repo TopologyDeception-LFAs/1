@@ -22,10 +22,61 @@ if "employees" not in st.session_state:
     st.session_state.employees: List[Dict] = []
 
 if "services" not in st.session_state:
+    # Preloaded services based on the price list image (each duration/price is a standalone option)
     st.session_state.services: List[Dict] = [
-        {"name": "Neck & Shoulders (20 mins)", "minutes": 20, "price": 40.0},
-        {"name": "Neck & Shoulders (30 mins)", "minutes": 30, "price": 50.0},
-        {"name": "Back & Hips (30 mins)", "minutes": 30, "price": 50.0},
+        # --- Deep Tissue Oil, Relaxation, Dry Massage ---
+        {"name": "NS (20 mins)", "minutes": 20, "price": 40.0},
+        {"name": "NS (30 mins)", "minutes": 30, "price": 50.0},
+        {"name": "NSH (30 mins)", "minutes": 30, "price": 50.0},
+        {"name": "NSH (45 mins)", "minutes": 45, "price": 75.0},
+        {"name": "BH (30 mins)", "minutes": 30, "price": 50.0},
+        {"name": "BH (45 mins)", "minutes": 45, "price": 75.0},
+        {"name": "L (30 mins)", "minutes": 30, "price": 50.0},
+        {"name": "L (45 mins)", "minutes": 45, "price": 75.0},
+        {"name": "NSB (45 mins)", "minutes": 45, "price": 75.0},
+        {"name": "NSB (60 mins)", "minutes": 60, "price": 100.0},
+        {"name": "NSAH (45 mins)", "minutes": 45, "price": 75.0},
+        {"name": "NSAH (60 mins)", "minutes": 60, "price": 100.0},
+        {"name": "NSBH (50 mins)", "minutes": 50, "price": 85.0},
+        {"name": "NSBH (60 mins)", "minutes": 60, "price": 100.0},
+        {"name": "BL (50 mins)", "minutes": 50, "price": 85.0},
+        {"name": "BL (60 mins)", "minutes": 60, "price": 100.0},
+        {"name": "NSBAH (50 mins)", "minutes": 50, "price": 85.0},
+        {"name": "NNSBAH (70 mins)", "minutes": 70, "price": 120.0},
+        {"name": "NSBL (50 mins)", "minutes": 50, "price": 85.0},
+        {"name": "NSBL (70 mins)", "minutes": 70, "price": 120.0},
+        {"name": "WB (60 mins)", "minutes": 60, "price": 100.0},
+        {"name": "WB (90 mins)", "minutes": 90, "price": 150.0},
+
+        # --- Foot Massage & Packages ---
+        {"name": "F(R) (30 mins)", "minutes": 30, "price": 50.0},
+        {"name": "F(R) (60 mins)", "minutes": 60, "price": 100.0},
+        {"name": "NSF (50 mins)", "minutes": 50, "price": 85.0},
+        {"name": "NSBF (60 mins)", "minutes": 60, "price": 100.0},
+        {"name": "NSBLF (70 mins)", "minutes": 70, "price": 120.0},
+        {"name": "WBF (90 mins)", "minutes": 90, "price": 150.0},
+
+        # --- Special Treatment ---
+        {"name": "Pregnancy massage (45 mins)", "minutes": 45, "price": 75.0},
+        {"name": "Pregnancy massage (60 mins)", "minutes": 60, "price": 100.0},
+        {"name": "Children massage (20 mins)", "minutes": 20, "price": 40.0},
+        {"name": "Children massage (30 mins)", "minutes": 30, "price": 50.0},
+        {"name": "Sciatica/Frozen Shoulder/Tennis Elbow/Golf Elbow (30 mins)", "minutes": 30, "price": 50.0},
+        {"name": "Sciatica/Frozen Shoulder/Tennis Elbow/Golf Elbow (45 mins)", "minutes": 45, "price": 75.0},
+        {"name": "Cupping Therapy with herbal oil (30 mins)", "minutes": 30, "price": 50.0},
+        {"name": "Ear Candling & Face Massage (30 mins)", "minutes": 30, "price": 50.0},
+        {"name": "Neck, Shoulders & Back + Cupping (50 mins)", "minutes": 50, "price": 85.0},
+
+        # --- Dry Needling Therapy ---
+        {"name": "Dry Needling (First Session)", "minutes": 0, "price": 80.0},
+        {"name": "Dry Needling (Second+ Session)", "minutes": 0, "price": 70.0},
+        {"name": "Dry Needling + 40 mins Remedial massage", "minutes": 40, "price": 130.0},
+
+        # --- Remedial Massage (Health Fund Rebate) ---
+        {"name": "Remedial Massage (30 mins)", "minutes": 30, "price": 60.0},
+        {"name": "Remedial Massage (45 mins)", "minutes": 45, "price": 85.0},
+        {"name": "Remedial Massage (60 mins)", "minutes": 60, "price": 110.0},
+        {"name": "Remedial Massage (90 mins)", "minutes": 90, "price": 160.0},
     ]
 
 if "assignments" not in st.session_state:
@@ -117,8 +168,8 @@ def refresh_status():
             rec["status"] = "排队中"
 
 with st.sidebar:
-    st.header("参数与设置")
-    st.caption("• 默认上班时间：09:00；员工先到先服务。\\n• 轮值顺序：按下一次空闲时间→签到时间→累计接待。")
+    st.header("Coral Chinese Message")
+    #st.caption("• 默认上班时间：09:00；员工先到先服务。\\n• 轮值顺序：按下一次空闲时间→签到时间→累计接待。")
     st.divider()
 
     st.subheader("服务项目（可编辑）")
@@ -148,7 +199,7 @@ with st.sidebar:
         st.session_state._customer_seq = 1
         st.toast("已清空：员工、等待队列与当日记录均已重置。")
 
-st.title("🧘 门店排班与轮值提醒系统（Streamlit 版）")
+st.title("Coral Chinese Message")
 tab_emp, tab_cus, tab_board = st.tabs(["员工签到/状态", "登记顾客/自动分配", "看板与提醒"])
 
 with tab_emp:
@@ -222,10 +273,12 @@ with tab_cus:
     with cols[0]:
         service_chosen = st.selectbox("项目", all_service_names, index=0)
     with cols[1]:
-        time_mode = st.radio("到店时间", ["使用当前时间", "手动输入"], horizontal=True, index=0)
+        time_mode = st.radio("开始时间", ["使用当前时间", "手动输入"], horizontal=True, index=0)
         if time_mode == "使用当前时间":
-            arrival_time = datetime.now().time()
-            st.caption(f"当前时间：{arrival_time.strftime('%H:%M:%S')}")
+            #arrival_time = datetime.now().time()
+            #st.caption(f"当前时间：{arrival_time.strftime('%H:%M:%S')}")
+            arrival_time = now().time()
+            st.caption(f"当前时间（墨尔本）：{arrival_time.strftime('%H:%M:%S')}")
             manual_time_str = None
         else:
             manual_time_str = st.text_input("手动输入到店时间（HH:MM 或 HH:MM:SS）", value=now().strftime("%H:%M"))
