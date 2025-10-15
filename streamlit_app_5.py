@@ -2,6 +2,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from typing import List, Dict, Optional
 
 st.set_page_config(page_title="门店排班与轮值管理", layout="wide")
@@ -21,6 +22,11 @@ def fmt_t(dt: Optional[datetime]) -> str:
 def now() -> datetime:
     return datetime.now()
 
+TZ = ZoneInfo('Australia/Melbourne')
+
+def now() -> datetime:
+    return datetime.now(TZ)
+    
 # ---------- Session state init ----------
 if "employees" not in st.session_state:
     st.session_state.employees: List[Dict] = []
