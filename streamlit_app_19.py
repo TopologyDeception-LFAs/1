@@ -473,7 +473,6 @@ with tab_cus:
         else:
             manual_time_str = st.text_input("手动输入到店时间（HH:MM 或 HH:MM:SS）", value=now().strftime("%H:%M")); arrival_time = None
     with cols[2]: group_count = st.number_input("同时到店人数（相同项目）", min_value=1, max_value=20, value=1, step=1)
-    """
     with cols[3]:
         if st.button("登记并分配", type="primary"):
             if time_mode == "使用当前时间（墨尔本）": t = arrival_time
@@ -483,6 +482,7 @@ with tab_cus:
             if t is not None:
                 arrival_dt = datetime.combine(now().date(), t, tzinfo=TZ); register_customers(service_chosen, arrival_dt, count=int(group_count)); st.success("已登记与分配（不足时将加入等待队）。")
 
+    
     """
     with cols[3]:
         if st.button("登记并分配", type="primary"):
@@ -528,7 +528,7 @@ with tab_cus:
                     st.session_state.last_created = {"assigned": [], "waiting": []}
                     st.info("已清除撤销标记。")
 
-    
+    """
     st.divider()
     st.markdown("#### 等待队列")
     if st.session_state.waiting:
