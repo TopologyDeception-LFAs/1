@@ -420,7 +420,7 @@ with st.sidebar:
         st.toast("已清空今日数据。")
 
 # ===== Main =====
-st.title("Coral Chinese Massage排班与轮值提醒系统（Streamlit 版）")
+st.title("Coral Chinese Massage排班与轮值提醒系统")
 tab_emp, tab_cus, tab_board = st.tabs(["员工签到/状态", "登记顾客/自动分配", "看板与提醒"])
 
 # -- 员工签到 --
