@@ -50,6 +50,7 @@ if "loaded_today" not in st.session_state:
     st.session_state.employees = st.session_state.get("employees", [])
     st.session_state.services = st.session_state.get("services", [
         # --- Deep Tissue Oil, Relaxation, Dry Massage ---
+        {"name": "None (0 mins)", "minutes": 0, "price": 0.0},
         {"name": "NS (1 mins)", "minutes": 1, "price": 45.0},
         {"name": "NS (20 mins)", "minutes": 20, "price": 40.0},
         {"name": "NS (30 mins)", "minutes": 30, "price": 50.0},
