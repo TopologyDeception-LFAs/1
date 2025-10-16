@@ -48,11 +48,60 @@ def save_state():
 if "loaded_today" not in st.session_state:
     st.session_state.employees = st.session_state.get("employees", [])
     st.session_state.services = st.session_state.get("services", [
-        {"name": "Neck & Shoulders (20 mins)", "minutes": 20, "price": 40.0},
-        {"name": "Neck & Shoulders (30 mins)", "minutes": 30, "price": 50.0},
-        {"name": "Neck, Shoulders & Head (45 mins)", "minutes": 45, "price": 75.0},
-        {"name": "Whole Body (60 mins)", "minutes": 60, "price": 100.0},
-        {"name": "Feet massage (30 mins)", "minutes": 30, "price": 50.0},
+        # --- Deep Tissue Oil, Relaxation, Dry Massage ---
+        {"name": "NS (1 mins)", "minutes": 1, "price": 45.0},
+        {"name": "NS (20 mins)", "minutes": 20, "price": 40.0},
+        {"name": "NS (30 mins)", "minutes": 30, "price": 50.0},
+        {"name": "NSH (30 mins)", "minutes": 30, "price": 50.0},
+        {"name": "NSH (45 mins)", "minutes": 45, "price": 75.0},
+        {"name": "BH (30 mins)", "minutes": 30, "price": 50.0},
+        {"name": "BH (45 mins)", "minutes": 45, "price": 75.0},
+        {"name": "L (30 mins)", "minutes": 30, "price": 50.0},
+        {"name": "L (45 mins)", "minutes": 45, "price": 75.0},
+        {"name": "NSB (45 mins)", "minutes": 45, "price": 75.0},
+        {"name": "NSB (60 mins)", "minutes": 60, "price": 100.0},
+        {"name": "NSAH (45 mins)", "minutes": 45, "price": 75.0},
+        {"name": "NSAH (60 mins)", "minutes": 60, "price": 100.0},
+        {"name": "NSBH (50 mins)", "minutes": 50, "price": 85.0},
+        {"name": "NSBH (60 mins)", "minutes": 60, "price": 100.0},
+        {"name": "BL (50 mins)", "minutes": 50, "price": 85.0},
+        {"name": "BL (60 mins)", "minutes": 60, "price": 100.0},
+        {"name": "NSBAH (50 mins)", "minutes": 50, "price": 85.0},
+        {"name": "NNSBAH (70 mins)", "minutes": 70, "price": 120.0},
+        {"name": "NSBL (50 mins)", "minutes": 50, "price": 85.0},
+        {"name": "NSBL (70 mins)", "minutes": 70, "price": 120.0},
+        {"name": "WB (60 mins)", "minutes": 60, "price": 100.0},
+        {"name": "WB (90 mins)", "minutes": 90, "price": 150.0},
+
+        # --- Foot Massage & Packages ---
+        {"name": "F(R) (30 mins)", "minutes": 30, "price": 50.0},
+        {"name": "F(R) (60 mins)", "minutes": 60, "price": 100.0},
+        {"name": "NSF (50 mins)", "minutes": 50, "price": 85.0},
+        {"name": "NSBF (60 mins)", "minutes": 60, "price": 100.0},
+        {"name": "NSBLF (70 mins)", "minutes": 70, "price": 120.0},
+        {"name": "WBF (90 mins)", "minutes": 90, "price": 150.0},
+
+        # --- Special Treatment ---
+        {"name": "Pregnancy massage (45 mins)", "minutes": 45, "price": 75.0},
+        {"name": "Pregnancy massage (60 mins)", "minutes": 60, "price": 100.0},
+        {"name": "Children massage (20 mins)", "minutes": 20, "price": 40.0},
+        {"name": "Children massage (30 mins)", "minutes": 30, "price": 50.0},
+        {"name": "Sciatica/Frozen Shoulder/Tennis Elbow/Golf Elbow (30 mins)", "minutes": 30, "price": 50.0},
+        {"name": "Sciatica/Frozen Shoulder/Tennis Elbow/Golf Elbow (45 mins)", "minutes": 45, "price": 75.0},
+        {"name": "Cupping Therapy with herbal oil (30 mins)", "minutes": 30, "price": 50.0},
+        {"name": "Ear Candling & Face Massage (30 mins)", "minutes": 30, "price": 50.0},
+        {"name": "Neck, Shoulders & Back + Cupping (50 mins)", "minutes": 50, "price": 85.0},
+
+        # --- Dry Needling Therapy ---
+        {"name": "Dry Needling (First Session)", "minutes": 0, "price": 80.0},
+        {"name": "Dry Needling (Second+ Session)", "minutes": 0, "price": 70.0},
+        {"name": "Dry Needling + 40 mins Remedial massage", "minutes": 40, "price": 130.0},
+
+        # --- Remedial Massage (Health Fund Rebate) ---
+        {"name": "Remedial Massage (30 mins)", "minutes": 30, "price": 60.0},
+        {"name": "Remedial Massage (45 mins)", "minutes": 45, "price": 85.0},
+        {"name": "Remedial Massage (60 mins)", "minutes": 60, "price": 110.0},
+        {"name": "Remedial Massage (90 mins)", "minutes": 90, "price": 160.0},
     ])
     st.session_state.assignments = st.session_state.get("assignments", [])
     st.session_state.waiting = st.session_state.get("waiting", [])
@@ -166,7 +215,7 @@ def delete_employees_by_names(names):
 
 # ===== Sidebar =====
 with st.sidebar:
-    st.header("参数与设置"); st.caption("• 墨尔本时区；轮值=下一次空闲→签到→累计接待；新员工受项目限制"); st.divider()
+    st.header("Coral Chinese Message"); st.divider() #st.caption("• 墨尔本时区；轮值=下一次空闲→签到→累计接待；新员工受项目限制"); 
     st.subheader("服务项目（可编辑）")
     with st.expander("管理项目（时长/价格）", expanded=False):
         df_services = pd.DataFrame(st.session_state.services)
@@ -191,7 +240,7 @@ with st.sidebar:
         st.toast("已清空今日数据。")
 
 # ===== Main =====
-st.title("🧘 门店排班与轮值提醒系统（Streamlit 版）")
+st.title("Coral Chinese Message排班与轮值提醒系统")
 tab_emp, tab_cus, tab_board = st.tabs(["员工签到/状态", "登记顾客/自动分配", "看板与提醒"])
 
 # -- 员工签到 --
@@ -397,8 +446,8 @@ with tab_board:
                     if row["pos"] > 0: parts.append(f"EFTPOS${row['pos']:.2f}")
                     if row["voucher"] > 0: parts.append(f"券${row['voucher']:.2f}")
                     return "，".join(parts) if parts else "未登记收款（按标价计）"
-                per_emp["收款注释"] = per_emp.apply(note, axis=1); per_emp.rename(columns={"employee":"员工","realized":"营业额($)"}, inplace=True)
-                st.markdown("###### 员工营业额统计（今日，含收款注释）"); st.dataframe(per_emp[["员工","营业额($)","收款注释"]], use_container_width=True, height=260)
+                per_emp["收款注释"] = per_emp.apply(note, axis=1); per_emp.rename(columns={"employee":"员工","realized":"营业额($)"}, inplace=True) #per_emp.rename(columns={"employee":"员工","realized":"营业额($)"}, inplace=True)
+                st.markdown("###### 员工营业额统计（今日，含收款注释）"); st.dataframe(per_emp[["员工","营业额($)"]], use_container_width=True, height=260) #st.dataframe(per_emp[["员工","营业额($)","收款注释"]], use_container_width=True, height=260)
             # 删除误录的顾客记录
             delids = st.multiselect("选择要删除的记录（客户ID）", [r["customer_id"] for r in st.session_state.assignments], key="del_assign_ids_full")
             if st.button("删除所选记录", disabled=not delids): delete_assignments_by_ids(delids); st.success("已删除所选记录，并已重算员工轮值。")
