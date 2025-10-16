@@ -222,7 +222,7 @@ def try_flush_waiting():
         if assigned == item["count"]: flushed.append(item)
     st.session_state.waiting = still; save_state(); return flushed
 
-"""
+
 def register_customers(service_name: str, arrival: datetime, count: int = 1):
     service = next((s for s in st.session_state.services if s["name"] == service_name), None)
     if not service: st.error("未找到该项目"); return
@@ -232,7 +232,6 @@ def register_customers(service_name: str, arrival: datetime, count: int = 1):
             st.session_state.waiting.append({"customer_id": st.session_state._customer_seq, "service": service, "arrival": arrival, "count": count-i})
             st.session_state._customer_seq += 1; save_state(); break
 """
-
 def register_customers(service_name: str, arrival: datetime, count: int = 1):
     """登记来客并尝试分配；返回本次新建的ID列表，用于撤销。"""
     created = {"assigned": [], "waiting": []}
@@ -258,7 +257,7 @@ def register_customers(service_name: str, arrival: datetime, count: int = 1):
         else:
             created["assigned"].append(rec["customer_id"])
     return created
-
+"""
 
 def refresh_status():
     changed = False
