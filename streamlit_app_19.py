@@ -233,7 +233,7 @@ def register_customers(service_name: str, arrival: datetime, count: int = 1):
             st.session_state._customer_seq += 1; save_state(); break
 """
 def register_customers(service_name: str, arrival: datetime, count: int = 1):
-    """登记来客并尝试分配；返回本次新建的ID列表，用于撤销。"""
+    #登记来客并尝试分配；返回本次新建的ID列表，用于撤销。
     created = {"assigned": [], "waiting": []}
     service = next((s for s in st.session_state.services if s["name"] == service_name), None)
     if not service:
