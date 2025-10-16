@@ -294,6 +294,27 @@ def build_timeline_blocks():
     df = df.sort_values(["员工","开始","结束"])
     return df
 
+
+def eligible_employees_for(service: Dict, at_time: datetime):
+    """返回在给定时间点、对给定项目可接单的员工顺位列表（已考虑能力与预约阻塞）。"""
+    if not st.session_state.employees:
+        return []
+    emps = sorted_employees_for_rotation()
+    ok = []
+    for e in emps:
+        if not can_employee_do(e, service):
+            continue
+        start_time = max(at_time, e["next_free"])
+        end_time = start_time + timedelta(minutes=service["minutes"])
+        # 预约阻塞：若会撞上该员工未来 pending 预约，则跳过
+        block = next_reservation_block(e["name"], start_time)
+        if block is not None and (end_time > block or start_time >= block):
+            continue
+        ok.append({"员工": e["name"], "类型": e.get("role","正式"), "下一次空闲": start_time, "预计结束": end_time, "累计接待": e["served_count"]})
+    # 排序：按照预计开始时间、签到、累计接待（与核心排序保持一致）
+    ok = sorted(ok, key=lambda r: (r["下一次空闲"],))
+    return ok
+
 # ===== Utilities for deletions & recompute =====
 def recompute_all_employees():
     by_emp = {}
@@ -454,26 +475,50 @@ with tab_cus:
     else:
         st.caption("当前没有等待中的顾客。")
 
-    # === 嵌入实时看板 ===
-    st.divider(); st.markdown("### ⏱️ 实时看板（快速查看）")
-    refresh_status(); apply_due_reservations()
-    if st.session_state.employees:
-        rotation = sorted_employees_for_rotation()
-        rows = []
-        for idx, e in enumerate(rotation):
-            status = "空闲" if e["next_free"] <= now() else f"忙碌至 {fmt_t(e['next_free'])}"
-            rows.append({"顺位": "👉 下一位" if idx == 0 else idx + 1, "员工": e["name"], "类型": e.get("role","正式"), "状态": status, "下一次空闲": fmt_t(e["next_free"]), "累计接待": e["served_count"]})
-        st.dataframe(pd.DataFrame(rows), use_container_width=True, height=220)
+    
+# === 嵌入实时看板 ===
+st.divider(); st.markdown("### ⏱️ 实时看板（快速查看）")
+refresh_status(); apply_due_reservations()
+
+# 计算预判时间（与当前登记控件保持一致）
+_preview_time = None
+try:
+    if time_mode == "使用当前时间（墨尔本）":
+        _preview_time = now()
     else:
-        st.caption("暂无员工签到。")
-    active = [r for r in st.session_state.assignments if r["status"] == "进行中"]
-    queued = [r for r in st.session_state.assignments if r["status"] == "排队中"]
-    if active:
-        st.markdown("#### 进行中"); st.dataframe(pd.DataFrame([{"客户ID": r["customer_id"], "员工": r["employee"], "项目": r["service"], "开始": fmt_t(r["start"]), "结束": fmt_t(r["end"])} for r in sorted(active, key=lambda x: x["end"])]), use_container_width=True, height=180)
-    if queued:
-        st.markdown("#### 排队中（已分配，未开始）"); st.dataframe(pd.DataFrame([{"客户ID": r["customer_id"], "员工": r["employee"], "项目": r["service"], "开始": fmt_t(r["start"]), "结束": fmt_t(r["end"])} for r in sorted(queued, key=lambda x: x["start"])]), use_container_width=True, height=180)
-    if st.session_state.waiting:
-        st.markdown("#### 等待分配（未指派员工）"); st.dataframe(pd.DataFrame([{"批次客户ID": w["customer_id"], "项目": w["service"]["name"], "人数": w["count"], "到店": fmt_t(w["arrival"])} for w in sorted(st.session_state.waiting, key=lambda x: x["arrival"])]), use_container_width=True, height=180)
+        parts = manual_time_str.strip().split(":")
+        hh, mm, ss = int(parts[0]), int(parts[1]), (int(parts[2]) if len(parts)==3 else 0)
+        _preview_time = datetime.combine(now().date(), dtime(hour=hh, minute=mm, second=ss), tzinfo=TZ)
+except Exception:
+    _preview_time = now()
+
+# 预判“可接此项目的顺位”
+service_obj = next((s for s in st.session_state.services if s["name"] == service_chosen), None)
+if st.session_state.employees and service_obj:
+    eligible = eligible_employees_for(service_obj, _preview_time)
+    if eligible:
+        import pandas as _pd
+        rows = []
+        for idx, e in enumerate(eligible):
+            rows.append({"顺位": "👉 下一位" if idx == 0 else idx + 1, "员工": e["员工"], "类型": e["类型"], "可开始": fmt_t(e["下一次空闲"]), "预计结束": fmt_t(e["预计结束"]), "累计接待": e["累计接待"]})
+        st.dataframe(_pd.DataFrame(rows), use_container_width=True, height=220)
+        # 提示下一位
+        first = eligible[0]
+        msg = f"可接此项目的下一位：{first['员工']}（{fmt_t(first['下一次空闲'])} 开始，至 {fmt_t(first['预计结束'])}）"
+        st.success(msg)
+    else:
+        st.warning("当前没有符合能力且不与预约冲突的员工。")
+else:
+    st.caption("暂无员工签到或项目未找到。")
+
+active = [r for r in st.session_state.assignments if r["status"] == "进行中"]
+queued = [r for r in st.session_state.assignments if r["status"] == "排队中"]
+if active:
+    st.markdown("#### 进行中"); st.dataframe(pd.DataFrame([{"客户ID": r["customer_id"], "员工": r["employee"], "项目": r["service"], "开始": fmt_t(r["start"]), "结束": fmt_t(r["end"])} for r in sorted(active, key=lambda x: x["end"])]), use_container_width=True, height=180)
+if queued:
+    st.markdown("#### 排队中（已分配，未开始）"); st.dataframe(pd.DataFrame([{"客户ID": r["customer_id"], "员工": r["employee"], "项目": r["service"], "开始": fmt_t(r["start"]), "结束": fmt_t(r["end"])} for r in sorted(queued, key=lambda x: x["start"])]), use_container_width=True, height=180)
+if st.session_state.waiting:
+    st.markdown("#### 等待分配（未指派员工）"); st.dataframe(pd.DataFrame([{"批次客户ID": w["customer_id"], "项目": w["service"]["name"], "人数": w["count"], "到店": fmt_t(w["arrival"])} for w in sorted(st.session_state.waiting, key=lambda x: x["arrival"])]), use_container_width=True, height=180)
 
 # -- 看板与提醒（完整版 + 收款编辑 + 删除） --
 with tab_board:
@@ -510,6 +555,27 @@ with tab_board:
             df_rot = pd.DataFrame(rows); st.dataframe(df_rot, use_container_width=True, height=260)
             nxt = rotation[0]; mins = max(0, int((nxt["next_free"] - now()).total_seconds() // 60))
             st.success(f"下一位应接单员工：{nxt['name']}（可立即接待）" if mins==0 else f"下一位应接单员工：{nxt['name']}（预计 {mins} 分钟后空闲，{fmt_t(nxt['next_free'])}）")
+        st.markdown("###### 顺位预判（按项目与时间考虑能力与预约）")
+        svc_opt = st.selectbox("选择项目用于预判", [s["name"] for s in st.session_state.services], key="predict_service")
+        t_str = st.text_input("到店时间（HH:MM 或 HH:MM:SS）", value=now().strftime("%H:%M"), key="predict_time")
+        if st.button("生成预判顺位", key="btn_predict"):
+            try:
+                parts = t_str.strip().split(":"); hh, mm, ss = int(parts[0]), int(parts[1]), (int(parts[2]) if len(parts)==3 else 0)
+                at_dt = datetime.combine(now().date(), dtime(hour=hh, minute=mm, second=ss), tzinfo=TZ)
+                svc = next((s for s in st.session_state.services if s["name"] == svc_opt), None)
+                if svc:
+                    el = eligible_employees_for(svc, at_dt)
+                    if el:
+                        import pandas as _pd
+                        rows = [{"顺位": "👉 下一位" if i==0 else i+1, "员工": e["员工"], "类型": e["类型"], "可开始": fmt_t(e["下一次空闲"]), "预计结束": fmt_t(e["预计结束"]), "累计接待": e["累计接待"]} for i, e in enumerate(el)]
+                        st.dataframe(_pd.DataFrame(rows), use_container_width=True, height=220)
+                    else:
+                        st.warning("没有符合条件的员工。")
+                else:
+                    st.error("未找到该项目。")
+            except Exception as _e:
+                st.error(f"时间格式错误：{_e}")
+    
         else:
             st.caption("暂无员工签到。")
     with right:
