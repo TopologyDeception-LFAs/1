@@ -601,6 +601,30 @@ with tab_board:
                         rec["pay_voucher"] = float(row["券($)"]) if row["券($)"] is not None else 0.0
                         rec["payment_note"] = str(row["备注"]) if row["备注"] is not None else ""
                 save_state()
+
+            # 员工营业额统计（含收款注释）
+            rows = []
+            for r in editable:
+                cash = r.get("pay_cash",0.0); bank = r.get("pay_transfer",0.0); pos = r.get("pay_eftpos",0.0); vou = r.get("pay_voucher",0.0)
+                realized = cash + bank + pos + vou
+                if realized <= 0: realized = r["price"]
+                rows.append({"employee": r["employee"], "realized": realized, "cash": cash, "bank": bank, "pos": pos, "voucher": vou})
+            if rows:
+                df_r = pd.DataFrame(rows); per_emp = df_r.groupby("employee")[["realized","cash","bank","pos","voucher"]].sum().reset_index().sort_values("realized", ascending=False)
+                def note(row):
+                    parts = []
+                    if row["cash"] > 0: parts.append(f"现金${row['cash']:.2f}")
+                    if row["bank"] > 0: parts.append(f"转账${row['bank']:.2f}")
+                    if row["pos"] > 0: parts.append(f"EFTPOS${row['pos']:.2f}")
+                    if row["voucher"] > 0: parts.append(f"券${row['voucher']:.2f}")
+                    return "，".join(parts) if parts else "未登记收款（按标价计）"
+                #per_emp["收款注释"] = per_emp.apply(note, axis=1)
+                per_emp.rename(columns={"employee":"员工","realized":"营业额($)"}, inplace=True)
+                st.markdown("###### 员工营业额统计（今日）")
+                st.dataframe(per_emp[["员工","营业额($)"]], use_container_width=True, height=260)
+                #st.dataframe(per_emp[["员工","营业额($)","收款注释"]], use_container_width=True, height=260)  
+
+            # 误录删除 / 加时·追加（保留一份在看板页，主操作位在登记页）
             st.markdown("###### 误录删除 / 加时 · 追加项目")
             colA, colB = st.columns(2)
             with colA:
