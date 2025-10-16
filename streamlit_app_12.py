@@ -215,7 +215,7 @@ def delete_employees_by_names(names):
 
 # ===== Sidebar =====
 with st.sidebar:
-    st.header("Coral Chinese Message"); st.divider() #st.caption("• 墨尔本时区；轮值=下一次空闲→签到→累计接待；新员工受项目限制"); 
+    st.header("Coral Chinese Massage"); st.divider() #st.caption("• 墨尔本时区；轮值=下一次空闲→签到→累计接待；新员工受项目限制"); 
     st.subheader("服务项目（可编辑）")
     with st.expander("管理项目（时长/价格）", expanded=False):
         df_services = pd.DataFrame(st.session_state.services)
@@ -240,7 +240,7 @@ with st.sidebar:
         st.toast("已清空今日数据。")
 
 # ===== Main =====
-st.title("Coral Chinese Message排班与轮值提醒系统")
+st.title("Coral Chinese Massage排班与轮值提醒系统")
 tab_emp, tab_cus, tab_board = st.tabs(["员工签到/状态", "登记顾客/自动分配", "看板与提醒"])
 
 # -- 员工签到 --
