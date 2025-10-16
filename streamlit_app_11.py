@@ -243,8 +243,8 @@ def apply_due_reservations():
 
 # ===== Sidebar =====
 with st.sidebar:
-    st.header("参数与设置")
-    st.caption("• 墨尔本时区；轮值=下一次空闲→签到→累计接待；新员工受项目限制")
+    st.header("Coral Chinese Message")
+    #st.caption("• 墨尔本时区；轮值=下一次空闲→签到→累计接待；新员工受项目限制")
     st.divider()
     st.subheader("服务项目（可编辑）")
     with st.expander("管理项目（时长/价格）", expanded=False):
@@ -270,7 +270,7 @@ with st.sidebar:
         st.toast("已清空今日数据。")
 
 # ===== Main =====
-st.title("🧘 门店排班与轮值提醒系统（Streamlit 版）")
+st.title("Coral Chinese Message排班与轮值提醒系统")
 tab_emp, tab_cus, tab_board = st.tabs(["员工签到/状态", "登记顾客/自动分配", "看板与提醒"])
 
 # -- 员工签到 --
@@ -488,3 +488,26 @@ with tab_board:
                 st.dataframe(per_emp[["员工","营业额($)","收款注释"]], use_container_width=True, height=260)
         else:
             st.caption("今天还没有记录。")
+
+st.divider()
+with st.expander("📘 使用说明（简要）", expanded=False):
+    st.markdown('''
+**核心规则**
+- 员工按签到先后进入轮值；分配时按 **下一次空闲时间 → 签到时间 → 累计接待** 排序。
+- 顾客到店登记后，系统自动分配员工：
+  - 如有空闲员工，立刻开工，计算开始/结束时间与价格；
+  - 如无人空闲，则进入等待队列，待有人空闲再分配（可手动“尝试重新分配”）。
+- 价格与时长来源于“服务项目”列表，可在侧边栏编辑保存。
+
+**示例**
+- 颈肩背 45 分钟，价格 $75：如果开始时间为 11:32，则结束时间为 12:17（45 分钟后）。
+- 同时来了两位或以上顾客（相同项目），按当前轮到的员工顺序依次分配。
+
+**建议**
+- 每天营业前先为所有员工完成“签到”；默认上班时间为 09:00。
+- 使用“实时看板”查看进行中的服务与即将空闲的员工，便于安排等候顾客。
+
+**导出与清空**
+- 侧边栏可下载今日 CSV 记录，包含客户、员工、时间与价格信息。
+- “清空今日数据”会保留签到与轮值顺序，但重置接待记录与等待队列。
+''')
