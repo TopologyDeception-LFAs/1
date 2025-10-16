@@ -485,26 +485,26 @@ with tab_cus:
 
     """
     with cols[3]:
-    if st.button("登记并分配", type="primary"):
-        if time_mode == "使用当前时间（墨尔本）":
-            t = arrival_time
-        else:
-            try:
-                parts = manual_time_str.strip().split(":")
-                hh, mm, ss = int(parts[0]), int(parts[1]), (int(parts[2]) if len(parts)==3 else 0)
-                t = dtime(hour=hh, minute=mm, second=ss)
-            except Exception as e:
-                st.error(f"时间格式错误：{e}")
-                t = None
-        if t is not None:
-            arrival_dt = datetime.combine(now().date(), t, tzinfo=TZ)
-            created = register_customers(service_chosen, arrival_dt, count=int(group_count))
-            st.session_state.last_created = created  # 保存“刚才这次”的ID们
-            # 友好提示
-            a = len(created["assigned"]); w = len(created["waiting"])
-            msg = "已登记与分配"
-            if w > 0: msg += f"（{w} 批次进入等待队列）"
-            st.success(msg)
+        if st.button("登记并分配", type="primary"):
+            if time_mode == "使用当前时间（墨尔本）":
+                t = arrival_time
+            else:
+                try:
+                    parts = manual_time_str.strip().split(":")
+                    hh, mm, ss = int(parts[0]), int(parts[1]), (int(parts[2]) if len(parts)==3 else 0)
+                    t = dtime(hour=hh, minute=mm, second=ss)
+                except Exception as e:
+                    st.error(f"时间格式错误：{e}")
+                    t = None
+            if t is not None:
+                arrival_dt = datetime.combine(now().date(), t, tzinfo=TZ)
+                created = register_customers(service_chosen, arrival_dt, count=int(group_count))
+                st.session_state.last_created = created  # 保存“刚才这次”的ID们
+                # 友好提示
+                a = len(created["assigned"]); w = len(created["waiting"])
+                msg = "已登记与分配"
+                if w > 0: msg += f"（{w} 批次进入等待队列）"
+                st.success(msg)
 
     # --- 刚才这次登记：一键撤销 ---
     recent = st.session_state.get("last_created", {"assigned": [], "waiting": []})
@@ -525,7 +525,7 @@ with tab_cus:
                     st.success("已撤销刚才这次登记。现在可以重新填写。")
             with c2:
                 if st.button("清除撤销标记（保留记录不删除）"):
-                   st.session_state.last_created = {"assigned": [], "waiting": []}
+                    st.session_state.last_created = {"assigned": [], "waiting": []}
                     st.info("已清除撤销标记。")
 
     
