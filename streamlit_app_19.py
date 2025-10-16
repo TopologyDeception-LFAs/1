@@ -113,8 +113,8 @@ if "loaded_today" not in st.session_state:
     st.session_state.loaded_today = True
 
 # 记录“刚才这次登记”生成的记录ID，方便撤销
-if "last_created" not in st.session_state:
-    st.session_state.last_created = {"assigned": [], "waiting": []}
+#if "last_created" not in st.session_state:
+    #st.session_state.last_created = {"assigned": [], "waiting": []}
 
 
 def ensure_payment_fields():
@@ -231,33 +231,6 @@ def register_customers(service_name: str, arrival: datetime, count: int = 1):
         if rec is None:
             st.session_state.waiting.append({"customer_id": st.session_state._customer_seq, "service": service, "arrival": arrival, "count": count-i})
             st.session_state._customer_seq += 1; save_state(); break
-"""
-def register_customers(service_name: str, arrival: datetime, count: int = 1):
-    #登记来客并尝试分配；返回本次新建的ID列表，用于撤销。
-    created = {"assigned": [], "waiting": []}
-    service = next((s for s in st.session_state.services if s["name"] == service_name), None)
-    if not service:
-        st.error("未找到该项目")
-        return created
-
-    for i in range(count):
-        rec = assign_customer(service, arrival)
-        if rec is None:
-            # 剩余人数合并为同一等待批次
-            st.session_state.waiting.append({
-                "customer_id": st.session_state._customer_seq,
-                "service": service,
-                "arrival": arrival,
-                "count": count - i
-            })
-            created["waiting"].append(st.session_state._customer_seq)
-            st.session_state._customer_seq += 1
-            save_state()
-            break
-        else:
-            created["assigned"].append(rec["customer_id"])
-    return created
-"""
 
 def refresh_status():
     changed = False
