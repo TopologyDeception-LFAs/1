@@ -112,6 +112,11 @@ if "loaded_today" not in st.session_state:
     if load_state(): st.toast("已恢复今日数据 ✅")
     st.session_state.loaded_today = True
 
+# 记录“刚才这次登记”生成的记录ID，方便撤销
+if "last_created" not in st.session_state:
+    st.session_state.last_created = {"assigned": [], "waiting": []}
+
+
 def ensure_payment_fields():
     for rec in st.session_state.assignments:
         for k in ("pay_cash","pay_transfer","pay_eftpos","pay_voucher","payment_note"):
@@ -217,6 +222,7 @@ def try_flush_waiting():
         if assigned == item["count"]: flushed.append(item)
     st.session_state.waiting = still; save_state(); return flushed
 
+"""
 def register_customers(service_name: str, arrival: datetime, count: int = 1):
     service = next((s for s in st.session_state.services if s["name"] == service_name), None)
     if not service: st.error("未找到该项目"); return
@@ -225,6 +231,34 @@ def register_customers(service_name: str, arrival: datetime, count: int = 1):
         if rec is None:
             st.session_state.waiting.append({"customer_id": st.session_state._customer_seq, "service": service, "arrival": arrival, "count": count-i})
             st.session_state._customer_seq += 1; save_state(); break
+"""
+
+def register_customers(service_name: str, arrival: datetime, count: int = 1):
+    """登记来客并尝试分配；返回本次新建的ID列表，用于撤销。"""
+    created = {"assigned": [], "waiting": []}
+    service = next((s for s in st.session_state.services if s["name"] == service_name), None)
+    if not service:
+        st.error("未找到该项目")
+        return created
+
+    for i in range(count):
+        rec = assign_customer(service, arrival)
+        if rec is None:
+            # 剩余人数合并为同一等待批次
+            st.session_state.waiting.append({
+                "customer_id": st.session_state._customer_seq,
+                "service": service,
+                "arrival": arrival,
+                "count": count - i
+            })
+            created["waiting"].append(st.session_state._customer_seq)
+            st.session_state._customer_seq += 1
+            save_state()
+            break
+        else:
+            created["assigned"].append(rec["customer_id"])
+    return created
+
 
 def refresh_status():
     changed = False
@@ -439,6 +473,7 @@ with tab_cus:
         else:
             manual_time_str = st.text_input("手动输入到店时间（HH:MM 或 HH:MM:SS）", value=now().strftime("%H:%M")); arrival_time = None
     with cols[2]: group_count = st.number_input("同时到店人数（相同项目）", min_value=1, max_value=20, value=1, step=1)
+    """
     with cols[3]:
         if st.button("登记并分配", type="primary"):
             if time_mode == "使用当前时间（墨尔本）": t = arrival_time
@@ -448,6 +483,52 @@ with tab_cus:
             if t is not None:
                 arrival_dt = datetime.combine(now().date(), t, tzinfo=TZ); register_customers(service_chosen, arrival_dt, count=int(group_count)); st.success("已登记与分配（不足时将加入等待队）。")
 
+    """
+    with cols[3]:
+    if st.button("登记并分配", type="primary"):
+        if time_mode == "使用当前时间（墨尔本）":
+            t = arrival_time
+        else:
+            try:
+                parts = manual_time_str.strip().split(":")
+                hh, mm, ss = int(parts[0]), int(parts[1]), (int(parts[2]) if len(parts)==3 else 0)
+                t = dtime(hour=hh, minute=mm, second=ss)
+            except Exception as e:
+                st.error(f"时间格式错误：{e}")
+                t = None
+        if t is not None:
+            arrival_dt = datetime.combine(now().date(), t, tzinfo=TZ)
+            created = register_customers(service_chosen, arrival_dt, count=int(group_count))
+            st.session_state.last_created = created  # 保存“刚才这次”的ID们
+            # 友好提示
+            a = len(created["assigned"]); w = len(created["waiting"])
+            msg = "已登记与分配"
+            if w > 0: msg += f"（{w} 批次进入等待队列）"
+            st.success(msg)
+
+    # --- 刚才这次登记：一键撤销 ---
+    recent = st.session_state.get("last_created", {"assigned": [], "waiting": []})
+    if (recent["assigned"] or recent["waiting"]):
+        with st.expander("🧯 撤销刚才这次登记（误录快捷更正）", expanded=True):
+            st.caption(
+                f"已创建：已分配 {len(recent['assigned'])} 条，等待队列 {len(recent['waiting'])} 批。"
+                " 点击下方按钮可一次性删除这些记录，然后重新填写正确信息。"
+            )
+            c1, c2 = st.columns([1,1])
+            with c1:
+                if st.button("撤销刚才这次登记", type="secondary"):
+                    if recent["assigned"]:
+                        delete_assignments_by_ids(recent["assigned"])
+                    if recent["waiting"]:
+                        delete_waiting_by_ids(recent["waiting"])
+                    st.session_state.last_created = {"assigned": [], "waiting": []}
+                    st.success("已撤销刚才这次登记。现在可以重新填写。")
+            with c2:
+                if st.button("清除撤销标记（保留记录不删除）"):
+                   st.session_state.last_created = {"assigned": [], "waiting": []}
+                    st.info("已清除撤销标记。")
+
+    
     st.divider()
     st.markdown("#### 等待队列")
     if st.session_state.waiting:
