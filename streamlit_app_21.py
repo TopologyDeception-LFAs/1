@@ -174,6 +174,9 @@ if "loaded_today" not in st.session_state:
 if "last_created" not in st.session_state:
     st.session_state.last_created = {"assigned": [], "waiting": []}
 
+if "last_addon" not in st.session_state:
+    st.session_state.last_addon = {}
+
 def ensure_payment_fields():
     for rec in st.session_state.assignments:
         for k in ("pay_cash","pay_transfer","pay_eftpos","pay_voucher","payment_note"):
@@ -386,60 +389,88 @@ def apply_due_reservations():
     if changed: save_state()
 
 # ===== Add-on / Extension utilities =====
+# ===== Add-on / Extension utilities =====
 def extend_or_add_on(record_id: int, mode: str, extra_minutes: int,
                      service_name: Optional[str] = None,
                      price_override: Optional[float] = None) -> Optional[str]:
     rec = next((r for r in st.session_state.assignments if r["customer_id"] == record_id), None)
-    if not rec: return "未找到该记录"
+    if not rec:
+        return "未找到该记录"
     emp = rec["employee"]
     base_end = rec["end"]
 
+    # 确保有 last_addon 容器
+    if "last_addon" not in st.session_state:
+        st.session_state.last_addon = {}
+
     if mode == "extend":
+        # —— 先保存“变更前”的旧值，用于撤销 ——
+        old_end = base_end
+        old_minutes = rec["minutes"]
+        old_price = rec["price"]
+
         new_end = base_end + timedelta(minutes=extra_minutes)
         msg = has_conflict(emp, base_end, new_end)
-        if msg: return msg
-        rec["end"] = new_end
+        if msg:
+            return msg
+
+        # 计算价格（注意 per_min 用“旧分钟/旧价格”）
         if price_override is not None:
-            rec["price"] = float(price_override)
+            new_price = float(price_override)
         else:
-            per_min = rec["price"] / max(rec["minutes"], 1)
-            rec["price"] = round(rec["price"] + per_min * extra_minutes, 2)
-        rec["minutes"] += extra_minutes
+            per_min = (old_price / max(old_minutes, 1))
+            new_price = round(old_price + per_min * extra_minutes, 2)
+
+        # 应用修改
+        rec["end"] = new_end
+        rec["price"] = new_price
+        rec["minutes"] = old_minutes + extra_minutes
+
+        # 更新员工 next_free
         for e in st.session_state.employees:
             if e["name"] == emp and e["next_free"] < new_end:
                 e["next_free"] = new_end
+
         save_state()
+
+        # —— 记录最近一次“加时”以便撤销 ——（用旧值）
+        st.session_state.last_addon = {
+            "mode": "extend",
+            "target_id": record_id,
+            "new_id": None,
+            "old_end": old_end.isoformat(),
+            "old_minutes": old_minutes,
+            "old_price": old_price,
+        }
         return None
+
     else:
         # 另起新单
+        start_time = base_end
         if service_name:
             svc = next((s for s in st.session_state.services if s["name"] == service_name), None)
-            if not svc: return "未找到追加的项目"
-            start_time = base_end; end_time = start_time + timedelta(minutes=svc["minutes"])
+            if not svc:
+                return "未找到追加的项目"
+            end_time = start_time + timedelta(minutes=svc["minutes"])
             msg = has_conflict(emp, start_time, end_time)
-            if msg: return msg
+            if msg:
+                return msg
             new_rec = {
                 "customer_id": st.session_state._customer_seq,
                 "service": svc["name"], "minutes": svc["minutes"], "employee": emp,
                 "start": start_time, "end": end_time, "price": svc["price"],
                 "status": "排队中" if start_time > now() else ("进行中" if end_time > now() else "已完成"),
                 "pay_cash": 0.0, "pay_transfer": 0.0, "pay_eftpos": 0.0, "pay_voucher": 0.0,
-                "payment_note": "追加项目"
+                "payment_note": "追加项目",
             }
-            st.session_state._customer_seq += 1
-            st.session_state.assignments.append(new_rec)
-            for e in st.session_state.employees:
-                if e["name"] == emp:
-                    if e["next_free"] < end_time: e["next_free"] = end_time
-                    e["served_count"] += 1
-            save_state()
-            return None
         else:
             minutes = int(extra_minutes)
-            start_time = base_end; end_time = start_time + timedelta(minutes=minutes)
+            end_time = start_time + timedelta(minutes=minutes)
             msg = has_conflict(emp, start_time, end_time)
-            if msg: return msg
-            per_min = rec["price"] / max(rec["minutes"], 1)
+            if msg:
+                return msg
+            # 以“旧价/旧分钟”计算本次追加单价格（或自定义）
+            per_min = (rec["price"] / max(rec["minutes"], 1))
             price = float(price_override) if price_override is not None else round(per_min * minutes, 2)
             new_rec = {
                 "customer_id": st.session_state._customer_seq,
@@ -447,16 +478,31 @@ def extend_or_add_on(record_id: int, mode: str, extra_minutes: int,
                 "start": start_time, "end": end_time, "price": price,
                 "status": "排队中" if start_time > now() else ("进行中" if end_time > now() else "已完成"),
                 "pay_cash": 0.0, "pay_transfer": 0.0, "pay_eftpos": 0.0, "pay_voucher": 0.0,
-                "payment_note": "加时"
+                "payment_note": "加时",
             }
-            st.session_state._customer_seq += 1
-            st.session_state.assignments.append(new_rec)
-            for e in st.session_state.employees:
-                if e["name"] == emp:
-                    if e["next_free"] < end_time: e["next_free"] = end_time
-                    e["served_count"] += 1
-            save_state()
-            return None
+
+        st.session_state._customer_seq += 1
+        st.session_state.assignments.append(new_rec)
+
+        for e in st.session_state.employees:
+            if e["name"] == emp:
+                if e["next_free"] < new_rec["end"]:
+                    e["next_free"] = new_rec["end"]
+                e["served_count"] += 1
+
+        save_state()
+
+        # —— 记录最近一次“另起一单”以便撤销 ——（删除新建记录即可）
+        st.session_state.last_addon = {
+            "mode": "add",
+            "target_id": record_id,
+            "new_id": new_rec["customer_id"],
+            "old_end": base_end.isoformat(),
+            "old_minutes": None,
+            "old_price": None,
+        }
+        return None
+
 
 # ===== Utilities for deletions & recompute =====
 def recompute_all_employees():
@@ -1031,6 +1077,31 @@ with tab_board:
                         else: st.success("已完成加时/追加。")
                     except Exception as e:
                         st.error(f"操作失败：{e}")
+                ########################
+                st.markdown("###### 撤销上一次加时/追加")
+                last = st.session_state.get("last_addon", {})
+                if last:
+                    tip = "延长当前服务" if last.get("mode") == "extend" else "另起一单（紧接着）"
+                    st.caption(f"待撤销：{tip}（目标记录ID: {last.get('target_id')}）")
+                    if st.button("撤销上一次加时/追加", type="secondary"):
+                        if last.get("mode") == "extend":
+                            rec = next((r for r in st.session_state.assignments if r["customer_id"] == last.get("target_id")), None)
+                        if rec:
+                            rec["end"] = parse_dt(last.get("old_end"))
+                            rec["minutes"] = int(last.get("old_minutes"))
+                            rec["price"] = float(last.get("old_price"))
+                            # 重新计算员工队列，保证 next_free 正确
+                            recompute_all_employees()
+                            save_state()
+                            st.success(f"已撤销加时并恢复记录 {last.get('target_id')} 的原时长与价格。")
+                    else:
+                        new_id = last.get("new_id")
+                        if new_id is not None:
+                            delete_assignments_by_ids([new_id])
+                            st.success(f"已删除追加单（客户ID {new_id}）。")
+                    st.session_state.last_addon = {}
+            else:
+                st.caption("暂无可撤销的加时/追加操作。")
         else:
             st.caption("今天还没有记录。")
 
