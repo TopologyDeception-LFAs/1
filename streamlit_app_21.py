@@ -1100,8 +1100,8 @@ with tab_board:
                             delete_assignments_by_ids([new_id])
                             st.success(f"已删除追加单（客户ID {new_id}）。")
                     st.session_state.last_addon = {}
-            else:
-                st.caption("暂无可撤销的加时/追加操作。")
+                else:
+                    st.caption("暂无可撤销的加时/追加操作。")
         else:
             st.caption("今天还没有记录。")
 
