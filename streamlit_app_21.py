@@ -1077,31 +1077,31 @@ with tab_board:
                         else: st.success("已完成加时/追加。")
                     except Exception as e:
                         st.error(f"操作失败：{e}")
-                ########################
-                st.markdown("###### 撤销上一次加时/追加")
-                last = st.session_state.get("last_addon", {})
-                if last:
-                    tip = "延长当前服务" if last.get("mode") == "extend" else "另起一单（紧接着）"
-                    st.caption(f"待撤销：{tip}（目标记录ID: {last.get('target_id')}）")
-                    if st.button("撤销上一次加时/追加", type="secondary"):
-                        if last.get("mode") == "extend":
-                            rec = next((r for r in st.session_state.assignments if r["customer_id"] == last.get("target_id")), None)
-                        if rec:
-                            rec["end"] = parse_dt(last.get("old_end"))
-                            rec["minutes"] = int(last.get("old_minutes"))
-                            rec["price"] = float(last.get("old_price"))
-                            # 重新计算员工队列，保证 next_free 正确
-                            recompute_all_employees()
-                            save_state()
-                            st.success(f"已撤销加时并恢复记录 {last.get('target_id')} 的原时长与价格。")
-                    else:
-                        new_id = last.get("new_id")
-                        if new_id is not None:
-                            delete_assignments_by_ids([new_id])
-                            st.success(f"已删除追加单（客户ID {new_id}）。")
-                    st.session_state.last_addon = {}
+            ########################
+            st.markdown("###### 撤销上一次加时/追加")
+            last = st.session_state.get("last_addon", {})
+            if last:
+                tip = "延长当前服务" if last.get("mode") == "extend" else "另起一单（紧接着）"
+                st.caption(f"待撤销：{tip}（目标记录ID: {last.get('target_id')}）")
+                if st.button("撤销上一次加时/追加", type="secondary"):
+                    if last.get("mode") == "extend":
+                        rec = next((r for r in st.session_state.assignments if r["customer_id"] == last.get("target_id")), None)
+                    if rec:
+                        rec["end"] = parse_dt(last.get("old_end"))
+                        rec["minutes"] = int(last.get("old_minutes"))
+                        rec["price"] = float(last.get("old_price"))
+                        # 重新计算员工队列，保证 next_free 正确
+                        recompute_all_employees()
+                        save_state()
+                        st.success(f"已撤销加时并恢复记录 {last.get('target_id')} 的原时长与价格。")
                 else:
-                    st.caption("暂无可撤销的加时/追加操作。")
+                    new_id = last.get("new_id")
+                    if new_id is not None:
+                        delete_assignments_by_ids([new_id])
+                        st.success(f"已删除追加单（客户ID {new_id}）。")
+                st.session_state.last_addon = {}
+            else:
+                st.caption("暂无可撤销的加时/追加操作。")
         else:
             st.caption("今天还没有记录。")
 
